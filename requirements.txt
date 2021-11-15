@@ -1,0 +1,6 @@
+aiosmtpd==1.4.2
+config==0.5.1
+loguru==0.5.3
+notifiers==1.2.1
+pytest-httpx==0.13.0
+pytest-mock==3.6.1
