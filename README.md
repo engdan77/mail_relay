@@ -42,9 +42,9 @@ All you need to supply is your gmail username, password and the email you like m
 
 ### Configure "notification" service in Home Assistant
 
-If you look closer how to add "[notification](https://www.home-assistant.io/integrations/notify/)" in HASS. And you also need to get access token (key) to be used with your integration, more information [here](https://www.home-assistant.io/docs/authentication/ ).
+If you look closer how to add "[notification](https://www.home-assistant.io/integrations/notify/)" in HASS to be used as <u>key</u> in above configuration. And you also need to get access token (key) to be used with your integration, more information [here](https://www.home-assistant.io/docs/authentication/ ).
 
-Home Assistant *configuration.yaml*
+A Home Assistant *configuration.yaml* where in such example I could use <u>all_iphones</u> set as target in above mail_relay configuration.
 
 ```yaml
 notify:
