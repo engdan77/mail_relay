@@ -7,8 +7,14 @@ While integrating the lawn mower to my existing home automation this embedded pl
 I also extended this package also adding possibility to send notification to a [Home Assistant](https://www.home-assistant.io) environment e.g. allowing "push" messages to Apple IOS or Android devices.
 
 ### Installation
-
-....
+#### From source
+````shell
+pip3 install git+https://github.com/engdan77/mail_relay.git
+````
+#### From Dockerhub
+```shell
+docker build -t mail_relay . && docker run -p 9587:9587 -p 9025:9025 -v config:/app/config --name mail_relay mail_relay 
+```
 
 ### Example configuration
 
