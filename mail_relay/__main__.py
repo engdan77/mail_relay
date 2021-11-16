@@ -3,6 +3,7 @@
 __email__ = "daniel@engvalls.eu"
 __version__ = '0.0.1'
 
+import os
 import signal
 import httpx
 from aiosmtpd.controller import Controller
@@ -39,12 +40,15 @@ def get_config(default_config: str) -> Config:
     :param default_config:
     :return: Config
     """
-    d: Path = Path(__file__).parent.absolute() / Path("../config")
+    if p := os.getenv('CONFIG_PATH', None):
+        d = Path(p)
+    else:
+        d: Path = Path(__file__).parent.absolute() / Path("../config")
     config_fn = d / Path(Path(__file__).parent.stem).with_suffix(".cfg")
     if not config_fn.parent.exists():
-        logger.info("Configuration created")
         d.mkdir(parents=True, exist_ok=True)
     if not config_fn.exists():
+        logger.info("Configuration created")
         config_fn.write_text(default_config)
     return Config(config_fn.as_posix())
 
