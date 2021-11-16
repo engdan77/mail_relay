@@ -48,7 +48,7 @@ def get_config(default_config: str) -> Config:
     if not config_fn.parent.exists():
         d.mkdir(parents=True, exist_ok=True)
     if not config_fn.exists():
-        logger.info("Configuration created")
+        logger.info(f"Configuration created {config_fn}")
         config_fn.write_text(default_config)
     return Config(config_fn.as_posix())
 
