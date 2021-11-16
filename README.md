@@ -13,8 +13,11 @@ pip3 install git+https://github.com/engdan77/mail_relay.git
 ````
 #### From Dockerhub
 ```shell
-docker build -t mail_relay . && docker run -p 9587:9587 -p 9025:9025 -v config:/app/config --name mail_relay mail_relay 
+mkdir config
+docker run -p 9587:9587 -p 9025:9025 -v $(pwd)/config:/app/config --name mail_relay engdan77/mail_relay
 ```
+
+First run if no mail_relay.cfg been created a default one will be created that could be updated.
 
 ### Example configuration
 
@@ -61,3 +64,23 @@ notify:
       - service: mobile_app_other_iphone
 ```
 
+### Tests and coverage
+
+```text
+pytest --cov
+================ test session starts =========================
+platform darwin -- Python 3.9.5, pytest-6.2.5, py-1.10.0, pluggy-1.0.0
+rootdir: /Users/edo/git/my/mail_relay
+plugins: anyio-3.3.1, mock-3.6.1, cov-3.0.0, httpx-0.13.0
+collected 4 items                                                                                                                                                          
+
+tests/test_mail_relay.py ....                                                                                                                                        [100%]
+
+---------- coverage: platform darwin, python 3.9.5-final-0 -----------
+Name                     Stmts   Miss  Cover
+--------------------------------------------
+mail_relay/__init__.py       1      0   100%
+mail_relay/__main__.py      91     21    77%
+--------------------------------------------
+TOTAL                       92     21    77%
+```
