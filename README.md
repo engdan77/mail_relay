@@ -17,7 +17,7 @@ pip3 install git+https://github.com/engdan77/mail_relay.git
 #### From Dockerhub
 ```shell
 mkdir config
-docker run -p 9587:9587 -p 9025:9025 -v $(pwd)/config:/app/config --name mail_relay engdan77/mail_relay
+docker run -p 9587:9587 -p 9025:9025 -v $(pwd)/config:/app/config -e CONFIG_PATH='/app/config' --name mail_relay engdan77/mail_relay
 ```
 
 First run if no mail_relay.cfg been created a default one will be created that could be updated.
