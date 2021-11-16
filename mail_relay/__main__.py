@@ -176,12 +176,14 @@ def main():
         MySmtpHandler(c), decode_data=True, hostname="0.0.0.0", port=c["tls_port"]
     )
     o = (controller_plain, controller_tls)
-    for c in o:
-        c.start()
-    logger.info("SMTP relay been started, CTRL-C to exit")
+    for client in o:
+        client.start()
+    logger.info(f"SMTP relay been started")
+    logger.info(f"listening to ports {c['smtp_port']}(SMTP) {c['tls_port']}(TLS)")
+    logger.info("CTRL-C to exit")
     signal.pause()
-    for c in o:
-        c.stop()
+    for client in o:
+        client.stop()
 
 
 if __name__ == "__main__":
