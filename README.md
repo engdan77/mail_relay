@@ -12,13 +12,36 @@ I also extended this package also adding possibility to send notification to a [
 ### Installation
 #### From source
 ````shell
-pip3 install git+https://github.com/engdan77/mail_relay.git
+$ pip3 install git+https://github.com/engdan77/mail_relay.git
 ````
 #### From Dockerhub
 ```shell
-mkdir config
-docker run -p 9587:9587 -p 9025:9025 -v $(pwd)/config:/app/config -e CONFIG_PATH='/app/config' --name mail_relay engdan77/mail_relay
+$ mkdir config
+$ docker run -p 9587:9587 -p 9025:9025 -v $(pwd)/config:/app/config -e CONFIG_PATH='/app/config' --name mail_relay engdan77/mail_relay
 ```
+
+### How to use
+
+Just start it by mail_relay and you will get log messages to console
+
+````shell
+$ mail_relay
+
+2021-11-16 19:58:07.426 | INFO     | mail_relay.__main__:main:185 - SMTP relay been started
+2021-11-16 19:58:07.427 | INFO     | mail_relay.__main__:main:186 - listening to ports 9025(SMTP) 9587(TLS)
+2021-11-16 19:58:07.428 | INFO     | mail_relay.__main__:main:187 - CTRL-C to exit
+2021-11-16 20:05:07.484 | DEBUG    | mail_relay.__main__:handle_DATA:73 - Message from daniel@engvalls.eu
+2021-11-16 20:05:07.485 | DEBUG    | mail_relay.__main__:handle_DATA:74 - Message for ['daniel@engvalls.eu']
+2021-11-16 20:05:07.485 | DEBUG    | mail_relay.__main__:handle_DATA:75 - Message data:
+
+2021-11-16 20:05:07.486 | DEBUG    | mail_relay.__main__:handle_DATA:84 - End of message
+2021-11-16 20:05:07.486 | INFO     | mail_relay.__main__:sender:98 - email enabled
+2021-11-16 20:05:07.487 | INFO     | mail_relay.__main__:notify_gmail:126 - body='fooo\n\n'
+2021-11-16 20:05:07.487 | INFO     | mail_relay.__main__:notify_gmail:127 - sending gmail
+2021-11-16 20:05:08.994 | INFO     | mail_relay.__main__:sender:101 - hass enabled
+2021-11-16 20:05:08.995 | INFO     | mail_relay.__main__:sender:103 - sending to Home Assistant 10.1.1.5
+2021-11-16 20:05:12.522 | DEBUG    | mail_relay.__main__:notify_hass:171 - hass response: <Response [200 OK]>
+````
 
 First run if no mail_relay.cfg been created a default one will be created that could be updated.
 
