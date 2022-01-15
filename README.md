@@ -17,7 +17,7 @@ $ pip3 install git+https://github.com/engdan77/mail_relay.git
 #### From Dockerhub
 ```shell
 $ mkdir config
-$ docker run -p 9587:9587 -p 9025:9025 -v $(pwd)/config:/app/config -e CONFIG_PATH='/app/config' --name mail_relay engdan77/mail_relay
+$ docker run -p 9587:9587 -p 9025:9025 -p 9080:9080 -v $(pwd)/config:/app/config -e CONFIG_PATH='/app/config' --name mail_relay engdan77/mail_relay
 ```
 
 ### How to use
@@ -45,6 +45,21 @@ $ mail_relay
 
 First run if no mail_relay.cfg been created a default one will be created that could be updated.
 
+### How to use
+
+Just start it by mail_relay and you will get log messages to console
+
+You are also able to send message using the REST api as example
+
+```shell
+curl -X POST 127.0.0.1:9080/send_message \
+   -H 'Content-Type: application/json' \
+   -d '{"subject":"My subject","message":"My message"}'
+```
+
+Or you can use the swagger docs to send using it http://127.0.0.1:9080/docs
+
+
 ### Example configuration
 
 This is a sample *mail_relay.cfg* where a default one being automatically generated within the config folder.
@@ -53,6 +68,7 @@ This is a sample *mail_relay.cfg* where a default one being automatically genera
 
 smtp_port: `$SMTP_PORT|9025`
 tls_port: `$SMTP_PORT|9587`
+api_port: `$API_PORT|9080`
 gmail: {
     enabled: true,
     username: 'mygmailaccount',
