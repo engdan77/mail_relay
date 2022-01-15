@@ -52,6 +52,7 @@ def test_get_config(tmp_path):
         "gmail",
         "tls_port",
         "hass",
+        "api_port"
     }
 
 
