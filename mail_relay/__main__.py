@@ -13,11 +13,17 @@ from config import Config
 from pathlib import Path
 from notifiers import get_notifier
 from email.parser import BytesParser
+from fastapi import FastAPI
+import uvicorn
+from pydantic import BaseModel
 
+
+app = FastAPI(title="Mail Relay")
 
 default_config = """
 smtp_port: `$SMTP_PORT|9025`
 tls_port: `$SMTP_PORT|9587`
+api_port: `$API_PORT|9080`
 gmail: {
     enabled: `$MAIL_FORWARD|false`,
     username: `$MAIL_USERNAME`,
@@ -32,6 +38,11 @@ hass: {
     key: `$HASS_KEY`
 }
 """
+
+
+class Message(BaseModel):
+    subject: str
+    message: str
 
 
 def get_config(default_config: str) -> Config:
@@ -51,6 +62,84 @@ def get_config(default_config: str) -> Config:
         logger.info(f"Configuration created {config_fn}")
         config_fn.write_text(default_config)
     return Config(config_fn.as_posix())
+
+
+async def notify_gmail(message: str, subject: str, config) -> None:
+    """Sends notification with settings from config
+
+    :param config:
+    :param message:
+    :param subject:
+    :return:
+    """
+    body = ""
+    mail = BytesParser().parsebytes(message.encode())
+    if mail.is_multipart():
+        parts = [_.get_payload() for _ in mail.get_payload()]
+        if parts:
+            body = "\n".join(parts)
+    else:
+        body = message
+    logger.info(f"{body=}")
+    logger.info("sending gmail")
+    g = get_notifier("gmail")
+    c = config["gmail"]
+    c.pop("enabled")
+    await asyncio.to_thread(g.notify, **{"subject": subject, "message": body, **c})
+
+
+async def notify_hass(
+    message: str,
+    host: str,
+    target: str,
+    key: str,
+    attachment_url: bool = None,
+    attachment_content_type: bool = None,
+    port: int = 8123,
+) -> None:
+    """Notification to Home Assistant platform
+
+    :param message: Message to be sent
+    :param host: HASS host
+    :param target: Being the notification "target" define within Home Assistant
+    :param key: The API key
+    :param attachment_url: If a attachment to be sent along
+    :param attachment_content_type:  Content type required for attachment
+    :param port: HASS port
+    :return:
+    """
+    headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
+    payload = {
+        "message": message,
+    }
+    if all((attachment_url, attachment_content_type)):
+        payload["data"] = {
+            "attachment": {
+                "url": attachment_url,
+                "hide-thumbnail": False,
+            }
+        }
+    async with httpx.AsyncClient() as x:
+        r = await x.post(
+            f"http://{host}:{port}/api/services/notify/{target}",
+            headers=headers,
+            json=payload,
+        )
+        logger.debug(f"hass response: {r}")
+
+
+async def sender_handler(message, subject, config):
+    if config["gmail"]["enabled"] in (True, "true"):
+        logger.info("email enabled")
+        await notify_gmail(message, subject, config)
+    if config["hass"]["enabled"] in (True, "true"):
+        logger.info("hass enabled")
+        h = config["hass"]
+        logger.info(f'sending to Home Assistant {h["host"]}')
+        try:
+            await notify_hass(subject, h["host"], h["target"], h["key"])
+        except (httpx.NetworkError, httpx.TimeoutException):
+            logger.error("failed sending to hass")
 
 
 class MySmtpHandler:
@@ -93,86 +182,25 @@ class MySmtpHandler:
         :param message:
         :return:
         """
-        config = self.config
-        if config["gmail"]["enabled"] in (True, "true"):
-            logger.info("email enabled")
-            await self.notify_gmail(message, subject)
-        if config["hass"]["enabled"] in (True, "true"):
-            logger.info("hass enabled")
-            h = config["hass"]
-            logger.info(f'sending to Home Assistant {h["host"]}')
-            try:
-                await self.notify_hass(subject, h["host"], h["target"], h["key"])
-            except (httpx.NetworkError, httpx.TimeoutException):
-                logger.error("failed sending to hass")
+        await sender_handler(message, subject, self.config)
 
-    async def notify_gmail(self, message: str, subject: str) -> None:
-        """Sends notification with settings from config
 
-        :param config:
-        :param message:
-        :param subject:
-        :return:
-        """
-        config = self.config
-        body = ""
-        mail = BytesParser().parsebytes(message.encode())
-        if mail.is_multipart():
-            parts = [_.get_payload() for _ in mail.get_payload()]
-            if parts:
-                body = "\n".join(parts)
-        else:
-            body = message
-        logger.info(f"{body=}")
-        logger.info("sending gmail")
-        g = get_notifier("gmail")
-        c = config["gmail"]
-        c.pop("enabled")
-        await asyncio.to_thread(g.notify, **{"subject": subject, "message": body, **c})
-
-    async def notify_hass(
-        self,
-        message: str,
-        host: str,
-        target: str,
-        key: str,
-        attachment_url: bool = None,
-        attachment_content_type: bool = None,
-        port: int = 8123,
-    ) -> None:
-        """Notification to Home Assistant platform
-
-        :param message: Message to be sent
-        :param host: HASS host
-        :param target: Being the notification "target" define within Home Assistant
-        :param key: The API key
-        :param attachment_url: If a attachment to be sent along
-        :param attachment_content_type:  Content type required for attachment
-        :param port: HASS port
-        :return:
-        """
-        headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
-        payload = {
-            "message": message,
-        }
-        if all((attachment_url, attachment_content_type)):
-            payload["data"] = {
-                "attachment": {
-                    "url": attachment_url,
-                    "hide-thumbnail": False,
-                }
-            }
-        async with httpx.AsyncClient() as x:
-            r = await x.post(
-                f"http://{host}:{port}/api/services/notify/{target}",
-                headers=headers,
-                json=payload,
-            )
-            logger.debug(f"hass response: {r}")
+@app.post("/send_message")
+async def send_message(payload: Message):
+    c = get_config(default_config)
+    logger.debug(f'Sending {payload.subject}')
+    await sender_handler(payload.message, payload.subject, c)
+    return {"success": True}
 
 
 def main():
     c = get_config(default_config)
+
+    # Prepare API
+    loop = asyncio.get_event_loop()
+    config = uvicorn.Config(app, host="0.0.0.0", port=int(c['api_port']))
+    server = uvicorn.Server(config)
+
     controller_plain = Controller(
         MySmtpHandler(c), hostname="0.0.0.0", port=c["smtp_port"]
     )
@@ -182,9 +210,9 @@ def main():
     o = (controller_plain, controller_tls)
     for client in o:
         client.start()
-    logger.info(f"SMTP relay been started")
-    logger.info(f"listening to ports {c['smtp_port']}(SMTP) {c['tls_port']}(TLS)")
+    logger.info(f"listening to ports {c['smtp_port']}(SMTP) {c['tls_port']}(TLS) {c['api_port']}(API)")
     logger.info("CTRL-C to exit")
+    loop.run_until_complete(server.serve())
     signal.pause()
     for client in o:
         client.stop()
